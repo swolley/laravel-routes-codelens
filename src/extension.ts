@@ -2,8 +2,12 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { RouteService } from './routeService';
 import { getControllerActionsFromPhpSource } from './controllerParser';
+import { isLaravelProject } from './laravelProject';
 
 function execArtisanRouteList(cwd: string): Promise<string> {
+    if (!isLaravelProject(cwd)) {
+        return Promise.resolve('[]');
+    }
     return new Promise((resolve, reject) => {
         cp.exec('php artisan route:list --json', { cwd }, (err, stdout, stderr) => {
             if (err) {

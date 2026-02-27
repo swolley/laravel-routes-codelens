@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-02-27
+
+### Added
+
+- Check for `artisan` in workspace root before running `php artisan route:list`; skip command and return empty routes in non-Laravel projects to avoid errors and console noise
+
 ## [0.1.0] - 2025-02-27
 
 ### Added

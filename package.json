@@ -1,8 +1,9 @@
 {
   "name": "laravel-routes-codelens",
   "displayName": "Laravel Routes CodeLens",
+  "publisher": "swolley",
   "description": "Show Laravel route info above controller methods using CodeLens.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "engines": {
     "vscode": "^1.90.0"
   },
