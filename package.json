@@ -39,8 +39,8 @@
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.6.0",
-    "vsce": "^2.15.0",
-    "vscode": "^1.1.37"
+    "vsce": "^1.97.0",
+    "vscode": "^0.9.9"
   },
   "repository": {
     "type": "git",
@@ -51,6 +51,14 @@
     "url": "https://github.com/swolley/laravel-routes-codelens/issues"
   },
   "license": "MIT",
-  "categories": ["Other"],
-  "keywords": ["laravel", "routes", "codelens", "php", "controller"]
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "laravel",
+    "routes",
+    "codelens",
+    "php",
+    "controller"
+  ]
 }
