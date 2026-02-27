@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+out/
+
+# Test coverage
+coverage/
+
+# VS Code extension test / packaging
+.vscode-test/
+*.vsix
+
+# IDE and OS
+.idea/
+.vscode/*
+!.vscode/launch.json
+!.vscode/extensions.json
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs and env
+*.log
+.env
+.env.local

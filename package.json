@@ -1,0 +1,55 @@
+{
+  "name": "laravel-routes-codelens",
+  "displayName": "Laravel Routes CodeLens",
+  "description": "Show Laravel route info above controller methods using CodeLens.",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "activationEvents": [
+    "onLanguage:php"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "laravelRoutes.refresh",
+        "title": "Laravel Routes: Refresh route list"
+      }
+    ],
+    "languages": [],
+    "codeLensProviders": [
+      {
+        "language": "php",
+        "scheme": "file"
+      }
+    ]
+  },
+  "main": "./out/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.0",
+    "vsce": "^2.15.0",
+    "vscode": "^1.1.37"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swolley/laravel-routes-codelens.git"
+  },
+  "homepage": "https://github.com/swolley/laravel-routes-codelens#readme",
+  "bugs": {
+    "url": "https://github.com/swolley/laravel-routes-codelens/issues"
+  },
+  "license": "MIT",
+  "categories": ["Other"],
+  "keywords": ["laravel", "routes", "codelens", "php", "controller"]
+}
