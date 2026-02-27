@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { RouteService } from './routeService';
 import { getControllerActionsFromPhpSource } from './controllerParser';
+import { buildCodeLensItems } from './codeLensItems';
 import { isLaravelProject } from './laravelProject';
 
 function execArtisanRouteList(cwd: string): Promise<string> {
@@ -42,29 +43,18 @@ class LaravelRouteCodeLensProvider implements vscode.CodeLensProvider {
 
         const text = document.getText();
         const actions = getControllerActionsFromPhpSource(text);
-        const lenses: vscode.CodeLens[] = [];
+        const items = buildCodeLensItems(actions, (action) =>
+            this.routeService.getRoutesForAction(action)
+        );
 
-        for (const { action, line } of actions) {
-            const routeInfo = this.routeService.getRouteForAction(action);
-            if (!routeInfo) {
-                continue;
-            }
-
-            const range = new vscode.Range(line, 0, line, 0);
-            const titleParts = [routeInfo.method.toUpperCase(), routeInfo.uri];
-            if (routeInfo.name) {
-                titleParts.push(`(${routeInfo.name})`);
-            }
-            const title = titleParts.join(' ');
-
-            lenses.push(
-                new vscode.CodeLens(range, {
-                    title,
-                    command: '',
-                    arguments: []
-                })
-            );
-        }
+        const lenses: vscode.CodeLens[] = items.map((item) => {
+            const range = new vscode.Range(item.line, 0, item.line, 0);
+            return new vscode.CodeLens(range, {
+                title: item.title,
+                command: '',
+                arguments: []
+            });
+        });
 
         return lenses;
     }

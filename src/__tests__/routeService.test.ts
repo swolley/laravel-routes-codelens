@@ -6,7 +6,7 @@ describe('RouteService', () => {
         {"method":"POST","uri":"users","name":"users.store","action":"App\\\\Http\\\\Controllers\\\\UserController@store"}
     ]`;
 
-    it('loads routes via injected runner and returns route for action', async () => {
+    it('loads routes via injected runner and returns routes for action', async () => {
         const runRouteList = jest.fn().mockResolvedValue(mockJson);
         const service = new RouteService('/fake/cwd', runRouteList);
 
@@ -15,24 +15,25 @@ describe('RouteService', () => {
         expect(runRouteList).toHaveBeenCalledWith('/fake/cwd');
         expect(service.loadedRouteCount).toBe(2);
 
-        const index = service.getRouteForAction('App\\Http\\Controllers\\UserController@index');
-        expect(index).toBeDefined();
-        expect(index?.method).toBe('GET');
-        expect(index?.uri).toBe('users');
-        expect(index?.name).toBe('users.index');
+        const indexRoutes = service.getRoutesForAction('App\\Http\\Controllers\\UserController@index');
+        expect(indexRoutes).toHaveLength(1);
+        expect(indexRoutes[0].method).toBe('GET');
+        expect(indexRoutes[0].uri).toBe('users');
+        expect(indexRoutes[0].name).toBe('users.index');
 
-        const store = service.getRouteForAction('App\\Http\\Controllers\\UserController@store');
-        expect(store?.method).toBe('POST');
-        expect(store?.uri).toBe('users');
+        const storeRoutes = service.getRoutesForAction('App\\Http\\Controllers\\UserController@store');
+        expect(storeRoutes).toHaveLength(1);
+        expect(storeRoutes[0].method).toBe('POST');
+        expect(storeRoutes[0].uri).toBe('users');
     });
 
-    it('returns undefined for unknown action', async () => {
+    it('returns empty array for unknown action', async () => {
         const runRouteList = jest.fn().mockResolvedValue(mockJson);
         const service = new RouteService('/fake/cwd', runRouteList);
         await service.refresh();
 
-        const unknown = service.getRouteForAction('App\\Http\\Controllers\\UnknownController@missing');
-        expect(unknown).toBeUndefined();
+        const unknown = service.getRoutesForAction('App\\Http\\Controllers\\UnknownController@missing');
+        expect(unknown).toEqual([]);
     });
 
     it('does not call runner when cwd is undefined', async () => {
@@ -52,7 +53,7 @@ describe('RouteService', () => {
         await service.ensureLoaded();
 
         expect(runRouteList).toHaveBeenCalledTimes(1);
-        expect(service.getRouteForAction('App\\Http\\Controllers\\UserController@index')).toBeDefined();
+        expect(service.getRoutesForAction('App\\Http\\Controllers\\UserController@index').length).toBeGreaterThan(0);
     });
 
     it('ensureLoaded does not call refresh again when already loaded', async () => {
@@ -79,8 +80,8 @@ describe('RouteService', () => {
 
         await service.refresh();
         expect(service.loadedRouteCount).toBe(1);
-        expect(service.getRouteForAction('App\\Http\\Controllers\\UserController@index')).toBeUndefined();
-        expect(service.getRouteForAction('App\\Http\\Controllers\\OtherController@index')).toBeDefined();
+        expect(service.getRoutesForAction('App\\Http\\Controllers\\UserController@index')).toHaveLength(0);
+        expect(service.getRoutesForAction('App\\Http\\Controllers\\OtherController@index')).toHaveLength(1);
     });
 
     it('on runner failure keeps previous routes and does not throw', async () => {
@@ -98,6 +99,25 @@ describe('RouteService', () => {
         spy.mockRestore();
 
         expect(service.loadedRouteCount).toBe(2);
-        expect(service.getRouteForAction('App\\Http\\Controllers\\UserController@index')).toBeDefined();
+        expect(service.getRoutesForAction('App\\Http\\Controllers\\UserController@index').length).toBeGreaterThan(0);
+    });
+
+    it('returns all routes when same action is used by multiple routes', async () => {
+        const multiRouteJson = `[
+            {"method": "GET", "uri": "api/thing", "name": "thing.show", "action": "App\\\\Http\\\\Controllers\\\\ThingController@show"},
+            {"method": "PUT", "uri": "api/thing", "name": "thing.update", "action": "App\\\\Http\\\\Controllers\\\\ThingController@show"}
+        ]`;
+        const runRouteList = jest.fn().mockResolvedValue(multiRouteJson);
+        const service = new RouteService('/fake/cwd', runRouteList);
+        await service.refresh();
+
+        const routes = service.getRoutesForAction('App\\Http\\Controllers\\ThingController@show');
+        expect(routes).toHaveLength(2);
+        expect(routes[0].method).toBe('GET');
+        expect(routes[0].uri).toBe('api/thing');
+        expect(routes[0].name).toBe('thing.show');
+        expect(routes[1].method).toBe('PUT');
+        expect(routes[1].uri).toBe('api/thing');
+        expect(routes[1].name).toBe('thing.update');
     });
 });

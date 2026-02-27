@@ -6,9 +6,10 @@ export type RouteListRunner = (cwd: string) => Promise<string>;
 /**
  * Service that holds the route list and provides lookup by action.
  * The runner (e.g. php artisan route:list --json) is injected for testability.
+ * Each action can have multiple routes (e.g. same controller method for GET and POST).
  */
 export class RouteService {
-    private routesByAction = new Map<string, LaravelRouteInfo>();
+    private routesByAction = new Map<string, LaravelRouteInfo[]>();
     private isRefreshing = false;
 
     constructor(
@@ -39,11 +40,16 @@ export class RouteService {
         }
     }
 
-    public getRouteForAction(action: string): LaravelRouteInfo | undefined {
-        return this.routesByAction.get(action);
+    /**
+     * Returns all routes registered for the given controller action.
+     * When a method is linked to multiple routes (e.g. GET /resource and POST /resource),
+     * all of them are returned so each can be shown on its own CodeLens line.
+     */
+    public getRoutesForAction(action: string): LaravelRouteInfo[] {
+        return this.routesByAction.get(action) ?? [];
     }
 
-    /** Exposed for tests: current number of loaded routes. */
+    /** Exposed for tests: current number of unique actions with at least one route. */
     public get loadedRouteCount(): number {
         return this.routesByAction.size;
     }

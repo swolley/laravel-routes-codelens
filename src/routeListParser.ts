@@ -23,11 +23,13 @@ interface RawRouteRow {
 
 /**
  * Parses JSON string from `php artisan route:list --json` and returns
- * a map of controller action (e.g. "App\\Http\\Controllers\\UserController@index") to route info.
+ * a map of controller action (e.g. "App\\Http\\Controllers\\UserController@index") to an array
+ * of route info. When the same action is used by multiple routes (e.g. GET and POST to same URI),
+ * all of them are collected so each can be displayed on its own CodeLens line.
  * Skips closures and entries without a valid action.
  */
-export function parseRouteListJson(jsonStr: string): Map<string, LaravelRouteInfo> {
-    const map = new Map<string, LaravelRouteInfo>();
+export function parseRouteListJson(jsonStr: string): Map<string, LaravelRouteInfo[]> {
+    const map = new Map<string, LaravelRouteInfo[]>();
 
     try {
         const raw = JSON.parse(jsonStr) as RawRouteRow[];
@@ -48,12 +50,19 @@ export function parseRouteListJson(jsonStr: string): Map<string, LaravelRouteInf
             const uri: string = route.uri ?? route.path ?? '';
             const name: string | undefined = route.name ?? route.route_name;
 
-            map.set(action, {
+            const info: LaravelRouteInfo = {
                 method,
                 uri,
                 name,
                 action
-            });
+            };
+
+            const existing = map.get(action);
+            if (existing) {
+                existing.push(info);
+            } else {
+                map.set(action, [info]);
+            }
         }
     } catch {
         // Return empty map on parse error; caller can handle if needed
