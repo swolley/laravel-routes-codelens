@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-04-27
+
+### Fixed
+
+- Improve CodeLens reliability across marketplace installs by resolving routes from the current document workspace folder
+- Use safer `php artisan route:list --json` execution with explicit extension output logging for runtime diagnostics
+
+### Added
+
+- GitHub Actions workflow to publish extension releases to VS Code Marketplace and Open VSX on version tags
+
 ## [0.2.1] - 2025-02-27
 
 ### Added
