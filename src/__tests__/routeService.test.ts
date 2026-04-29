@@ -120,4 +120,19 @@ describe('RouteService', () => {
         expect(routes[1].uri).toBe('api/thing');
         expect(routes[1].name).toBe('thing.update');
     });
+
+    it('exposes a defensive copy of all routes and refresh version', async () => {
+        const runRouteList = jest.fn().mockResolvedValue(mockJson);
+        const service = new RouteService('/fake/cwd', runRouteList);
+        expect(service.getRefreshVersion()).toBe(0);
+
+        await service.refresh();
+        expect(service.getRefreshVersion()).toBe(1);
+
+        const copy = service.getAllRoutesByAction();
+        copy.clear();
+
+        expect(service.loadedRouteCount).toBe(2);
+        expect(service.getAllRoutesByAction().size).toBe(2);
+    });
 });

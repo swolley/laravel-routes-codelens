@@ -15,6 +15,11 @@ A VS Code extension that shows Laravel route information (HTTP method, URI, rout
 
 ## Installation
 
+### From Marketplace
+
+- VS Code Marketplace: [Laravel Routes CodeLens](https://marketplace.visualstudio.com/items?itemName=swolley.laravel-routes-codelens)
+- OpenVSX Registry: [Laravel Routes CodeLens](https://open-vsx.org/extension/swolley/laravel-routes-codelens)
+
 ### From a VSIX package (e.g. GitHub Releases)
 
 1. Download the `.vsix` file from the [Releases](https://github.com/YOUR_USERNAME/laravel-routes-codelens/releases) page.
@@ -43,7 +48,7 @@ A VS Code extension that shows Laravel route information (HTTP method, URI, rout
 | `npm run watch`  | Watch and recompile on change  |
 | `npm test`       | Run unit tests (Jest)          |
 | `npm run test:watch` | Run tests in watch mode   |
-| `npm run test -- --coverage` | Run tests with coverage |
+| `npm run test:coverage` | Run tests with coverage |
 
 ### Project structure
 
