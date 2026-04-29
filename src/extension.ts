@@ -4,6 +4,8 @@ import { RouteService } from './routeService';
 import { getControllerActionsFromPhpSource } from './controllerParser';
 import { buildCodeLensItems } from './codeLensItems';
 import { isLaravelProject } from './laravelProject';
+import { ControllerIndexService } from './controllerIndexService';
+import { buildDeclaredRoutesLookup, type DeclaredRouteLookup } from './controllerHierarchy';
 
 function execArtisanRouteList(cwd: string, output_channel: vscode.OutputChannel): Promise<string> {
     if (!isLaravelProject(cwd)) {
@@ -37,10 +39,20 @@ class LaravelRouteCodeLensProvider implements vscode.CodeLensProvider {
     public readonly onDidChangeCodeLenses = this.onDidChangeCodeLensesEmitter.event;
 
     constructor(
-        private readonly get_route_service_for_document: (
+        private readonly get_services_for_document: (
             document: vscode.TextDocument
-        ) => RouteService | undefined
+        ) =>
+            | {
+                  route_service: RouteService;
+                  controller_index_service: ControllerIndexService;
+              }
+            | undefined
     ) {}
+
+    private declared_lookup_cache = new WeakMap<RouteService, {
+        lookup: DeclaredRouteLookup;
+        key: string;
+    }>();
 
     public refresh(): void {
         this.onDidChangeCodeLensesEmitter.fire();
@@ -50,21 +62,22 @@ class LaravelRouteCodeLensProvider implements vscode.CodeLensProvider {
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): Promise<vscode.CodeLens[]> {
-        const route_service = this.get_route_service_for_document(document);
-        if (!route_service) {
+        const services = this.get_services_for_document(document);
+        if (!services) {
             return [];
         }
+        const { route_service, controller_index_service } = services;
 
         await route_service.ensureLoaded();
+        await controller_index_service.ensureLoaded();
         if (token.isCancellationRequested) {
             return [];
         }
 
         const text = document.getText();
         const actions = getControllerActionsFromPhpSource(text);
-        const items = buildCodeLensItems(actions, (action) =>
-            route_service.getRoutesForAction(action)
-        );
+        const lookup = this.getDeclaredLookup(route_service, controller_index_service);
+        const items = buildCodeLensItems(actions, (action) => lookup.getRoutesForDeclaredAction(action));
 
         const lenses: vscode.CodeLens[] = items.map((item) => {
             const range = new vscode.Range(item.line, 0, item.line, 0);
@@ -76,6 +89,24 @@ class LaravelRouteCodeLensProvider implements vscode.CodeLensProvider {
 
         return lenses;
     }
+
+    private getDeclaredLookup(
+        route_service: RouteService,
+        controller_index_service: ControllerIndexService
+    ): DeclaredRouteLookup {
+        const key = `${route_service.getRefreshVersion()}:${controller_index_service.getVersion()}`;
+        const existing = this.declared_lookup_cache.get(route_service);
+        if (existing && existing.key === key) {
+            return existing.lookup;
+        }
+
+        const lookup = buildDeclaredRoutesLookup(
+            route_service.getAllRoutesByAction(),
+            controller_index_service.getHierarchy()
+        );
+        this.declared_lookup_cache.set(route_service, { lookup, key });
+        return lookup;
+    }
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -83,6 +114,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(output_channel);
 
     const route_services_by_cwd = new Map<string, RouteService>();
+    const controller_index_services_by_cwd = new Map<string, ControllerIndexService>();
 
     const get_or_create_route_service = (cwd: string): RouteService => {
         const existing_service = route_services_by_cwd.get(cwd);
@@ -106,7 +138,19 @@ export function activate(context: vscode.ExtensionContext) {
             return undefined;
         }
 
-        return get_or_create_route_service(workspace_folder.uri.fsPath);
+        const cwd = workspace_folder.uri.fsPath;
+        const route_service = get_or_create_route_service(cwd);
+
+        let controller_index_service = controller_index_services_by_cwd.get(cwd);
+        if (!controller_index_service) {
+            controller_index_service = new ControllerIndexService(workspace_folder);
+            controller_index_services_by_cwd.set(cwd, controller_index_service);
+        }
+
+        return {
+            route_service,
+            controller_index_service
+        };
     });
 
     context.subscriptions.push(
@@ -115,7 +159,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     const refreshCommand = vscode.commands.registerCommand('laravelRoutes.refresh', async () => {
         const services = [...route_services_by_cwd.values()];
+        const index_services = [...controller_index_services_by_cwd.values()];
         await Promise.all(services.map((service) => service.refresh()));
+        await Promise.all(index_services.map((service) => service.refreshAll()));
         provider.refresh();
     });
 
@@ -123,7 +169,28 @@ export function activate(context: vscode.ExtensionContext) {
         // Intentionally empty: CodeLens entries are informative only.
     });
 
-    context.subscriptions.push(refreshCommand, noOpCommand);
+    const onSave = vscode.workspace.onDidSaveTextDocument(async (document) => {
+        if (document.languageId !== 'php') {
+            return;
+        }
+
+        const workspace_folder = vscode.workspace.getWorkspaceFolder(document.uri);
+        if (!workspace_folder) {
+            return;
+        }
+
+        const cwd = workspace_folder.uri.fsPath;
+        const route_service = route_services_by_cwd.get(cwd);
+        const index_service = controller_index_services_by_cwd.get(cwd);
+        if (!route_service || !index_service) {
+            return;
+        }
+
+        await index_service.reindexFile(document.uri);
+        provider.refresh();
+    });
+
+    context.subscriptions.push(refreshCommand, noOpCommand, onSave);
 }
 
 export function deactivate() {

@@ -11,6 +11,7 @@ export type RouteListRunner = (cwd: string) => Promise<string>;
 export class RouteService {
     private routesByAction = new Map<string, LaravelRouteInfo[]>();
     private isRefreshing = false;
+    private refreshVersion = 0;
 
     constructor(
         private readonly cwd: string | undefined,
@@ -33,6 +34,7 @@ export class RouteService {
         try {
             const output = await this.runRouteList(this.cwd);
             this.routesByAction = parseRouteListJson(output);
+            this.refreshVersion++;
         } catch (error) {
             console.error('Failed to refresh Laravel routes', error);
         } finally {
@@ -47,6 +49,14 @@ export class RouteService {
      */
     public getRoutesForAction(action: string): LaravelRouteInfo[] {
         return this.routesByAction.get(action) ?? [];
+    }
+
+    public getAllRoutesByAction(): Map<string, LaravelRouteInfo[]> {
+        return new Map(this.routesByAction);
+    }
+
+    public getRefreshVersion(): number {
+        return this.refreshVersion;
     }
 
     /** Exposed for tests: current number of unique actions with at least one route. */
